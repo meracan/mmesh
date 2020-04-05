@@ -5,16 +5,27 @@ import os
 from ..mesh import MMSH
 from mshapely import DF
 
-def createMSH(input,output):
+def createMSH(input,output,progress=False):
   # command = "gmsh {0} -2 -format msh2 -algo frontal -smooth {2} -o {1}.msh".format(file,name,smooth)
   input = os.path.splitext(input)[0]+".geo"
   output = os.path.splitext(output)[0]+".msh"
   command = "gmsh {0} -2 -smooth 10 -algo frontal -o  {1}".format(input,output)
-  print(command)
+  if progress:print(command)
   subprocess.call(command, shell=True)
   return MMSH(output)
     
 def createGEO(geo,path,df,*args,**kwargs):
+  """
+  Creates mesh using gmsh using Polygon boundaries and density field (DF).
+  It's a two step process:
+  1. Creates a geo file (text file), createGEO()
+  2. Creates a msh file using gmsh, createMSH()
+  
+  Parameters
+  ----------
+  path:str
+  df:Density field,mshapely.DF
+  """
   output = os.path.splitext(path)[0]+".geo"
   points=geo.np
   strPoints = ""

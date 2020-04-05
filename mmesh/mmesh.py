@@ -29,5 +29,5 @@ def msh(self,*args,**kwargs):
   geo=self.largest()
   geo.msh(*args,**kwargs)
   return geo
-  
+msh.__doc__=createGEO.__doc__
 
