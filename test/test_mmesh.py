@@ -1,4 +1,4 @@
-
+import os
 import numpy as np
 from mmesh import MESH,MSLF,MMSH
 from slfpy import SLF
@@ -7,18 +7,13 @@ from mshapely import DF
 
 import matplotlib.pyplot as plt
 
-def test_mesh():
+def test_MESH():
   grid=SLF.createGrid()
   mesh=MESH(grid['xy'],grid['ikle'])
-  mesh.boundaries.write("test/data/boundaries.1.geojson")
-  mesh.geoedges.write("test/data/edges.1.geojson")
-  mesh.geoedges.plot().savePlot("test/data/mesh.1.png")
-  mesh.boundaries.plot(showPoints=True,pointStyle={"c":"black"}).savePlot("test/data/boundaries.1.png")
-  mesh.write("test/data/slf.1.slf")
-  mesh.write("test/data/mesh.1.msh")
-  
-  mesh1=MSLF("test/data/slf.1.slf")
-  mesh2=MMSH("test/data/mesh.1.msh")
+  mesh.write("slf.1.slf")
+  mesh.write("mesh.1.msh")
+  mesh1=MSLF("slf.1.slf")
+  mesh2=MMSH("mesh.1.msh")
   
   np.testing.assert_almost_equal(mesh.x,mesh1.x)
   np.testing.assert_almost_equal(mesh.y,mesh1.y)
@@ -27,12 +22,8 @@ def test_mesh():
   np.testing.assert_almost_equal(mesh.x,mesh2.x)
   np.testing.assert_almost_equal(mesh.y,mesh2.y)
   np.testing.assert_almost_equal(mesh.triangles,mesh2.triangles)
+  os.remove("slf.1.slf")
+  os.remove("mesh.1.msh")
   
-  
-  
-
-
 if __name__ == "__main__":
-  test_mesh()
-  # test_mslf()
-  # test_mmesh()
+  test_MESH()

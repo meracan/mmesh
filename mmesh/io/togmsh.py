@@ -36,14 +36,7 @@ def createGEO(geo,path,df,*args,**kwargs):
   LID = 1
   LLID = 1
   
-  # Create density points that are not in shoreline
-  if(np.any(np.unique(df.dp[:,4])>1)):
-    dp = df.dp
-    xy=dp[dp[:,4]==0,:2]
-    for p0 in xy:
-      strPoints += "Point({0:n}) = {{{1},{2},{3},{4}}};\n".format(PID, p0[0], p0[1], 0, 100)
-      PID +=1
-    
+  
   for ipolygon in np.unique(points[:, 0]):
     subpoints = points[points[:, 0] == ipolygon]
     
@@ -70,39 +63,49 @@ def createGEO(geo,path,df,*args,**kwargs):
   strSurface +="s{0:n} = newreg;".format(1)
   strSurface +="Plane Surface(s{0}) = {{{1}}};".format(1, strTs)
   
+  
+  # Create density points that are not in shoreline
+  if(np.any(np.unique(df.dp[:,4])>1)):
+    dp = df.dp
+    xy=dp[dp[:,4]!=0,:2]
+    for p0 in xy:
+      strPoints += "Point({0:n}) = {{{1},{2},{3},{4}}};\n".format(PID, p0[0], p0[1], 0, 100)
+      PID +=1
+  
   with open(output,"w") as geofile:
     geofile.write("{0}\n".format(strPoints))
     geofile.write("{0}\n".format(strLines))
     geofile.write("{0}\n".format(strLoop))
     geofile.write("{0}\n".format(strSurface))
-    geofile.write("{0}\n".format(getAttractors(points,df)))
+    geofile.write("{0}\n".format(getAttractors(df)))
   
   
   return output
 
   
-def getAttractors(points,df):
+def getAttractors(df):
   
   
   minDensity=df.minDensity
   maxDensity=df.maxDensity
-  strAttractor =""
-  ATID=1
-  gATID=[str(1)]
+  
+  strAttractor,ATID,gATID=_getShorelineAttractors(df)
+  
   dp=df.dp
-  density=dp[:,2]
-  growth=dp[:,3]
+  nshorelinedp = len(dp[dp[:,4]==0])
+  pointDP = dp[dp[:,4]!=0]
+  density=pointDP[:,2]
+  growth=pointDP[:,3]
   distances=DF.getl_D(density,growth,maxDensity)
   
   # Get # of density points that are not in shoreline
-  nxy=len(dp[dp[:,4]==0])
+  # nxy=len(dp[dp[:,4]==0])
   
-  for i,point in enumerate(df.dp):
+  for i,point in enumerate(pointDP):
     ATID +=1 
-    pointID = point[5] if point[4]==0 else nxy+point[5] # Check if density is in shoreline or not
-    
+    # pointID = point[5] if point[4]==0 else nxy+point[5] # Check if density is in shoreline or not
+    pointID = nshorelinedp+i
     strAttractor +="Field[{0}] = Attractor;Field[{0}].NodesList = {{{1:n}}};".format(ATID,pointID+1)    
-
     distance=distances[i]
     _d=density[i]
     ATID +=1
@@ -110,6 +113,9 @@ def getAttractors(points,df):
     gATID.append(str(ATID))
   
   ATID += 1
+  
+  
+  
   strAttractor +='Field[1] = MathEval;Field[1].F = "{}";'.format(maxDensity)
   strAttractor +="Field[{0}] = Min;Field[{0}].FieldsList = {{{1}}};\n".format(ATID,",".join(gATID))
   strAttractor +="Background Field = {0};\n".format(ATID)
@@ -120,33 +126,47 @@ def getAttractors(points,df):
   return strAttractor
   
   
-# def getAttractors(points):
-#   attractors=np.concatenate([
-#     np.arange(1E1,1E2,1E1),
-#     np.arange(1E2,1E3,1E2),
-#     np.arange(1E3, 1E4, 1E3),
-#     np.arange(1E4, 1E5, 1E4),
-#     ])
-    
-#   # pp=attractors[np.abs(attractors[:,None]-points).argmin(axis=0)]
-#   index=np.abs(attractors[:,None]-points).argmin(axis=0)
+def _getShorelineAttractors(df):
+  strAttractor =""
+  ATID=1
+  gATID=[str(1)]
   
-#   strAttractorTreshold =""
-#   ATID=0
-#   for i,density in enumerate(attractors):
-#     nodelist=np.where(i==index)[0]
-#     if len(nodelist)>0:
-#       strnodelist = ",".join(nodelist.astype('str'))
-#       ATID +=1 
-#       strAttractorTreshold +="Field[{0}] = Attractor;Field[{0}].NodesList = {{{1}}};".format(ATID,strnodelist)
-#       n= np.maximum(np.floor(np.log(maxDensity/density)/np.log(growth)-1),1)
-#       maxDistance = (minDensity*np.power(growth,n+1)-minDensity)/(growth-1)  
-#       ATID +=1
-#       strAttractorTreshold +="Field[{0}] = Threshold;Field[{0}].IField = {1};Field[{0}].DistMax = {4};Field[{0}].DistMin = 0;Field[{0}].LcMax = {3};Field[{0}].LcMin = {2:.1f};\n".format(ATID,ATID-1,density,maxDensity,distance)
-#       print(strnodelist)
-    
-    
-#     # print(index[i==index])
-#   # print(np.abs(attractors[:,None]-points).argmin(axis=0))
+  dp=df.dp
+  dp = dp[dp[:,4]==0]
+  minDensity=df.minDensity
+  maxDensity=df.maxDensity
+  growth=df.minGrowth
+  density=dp[:,2]
   
-  None
+  
+  attractors=np.concatenate([
+    np.arange(1E1,1E2,1E1),
+    np.arange(1E2,1E3,1E2),
+    np.arange(1E3, 1E4, 1E3),
+    np.arange(1E4, 1E5, 1E4),
+    np.arange(1E5, 1E6, 1E5),
+    ])
+    
+  # pp=attractors[np.abs(attractors[:,None]-points).argmin(axis=0)]
+
+  for i in range(0,5):
+    _i=np.where(np.logical_and(np.power(10,i)<density, density<np.power(10,i+1)))[0]
+    density[_i]=np.ceil(density[_i] / np.power(10,i))*np.power(10,i)
+  
+  index=np.abs(attractors[:,None]-density).argmin(axis=0)
+  
+  distances=DF.getl_D(attractors,growth,maxDensity)
+  for i,density in enumerate(attractors):
+    nodelist=np.where(i==index)[0]
+    nodelist=dp[nodelist,5]+1.0
+    if len(nodelist)>0:
+      strnodelist = ",".join(nodelist.astype('int').astype('str'))
+      ATID +=1 
+      strAttractor +="Field[{0}] = Attractor;Field[{0}].NodesList = {{{1}}};".format(ATID,strnodelist)
+      distance=distances[i]
+      ATID +=1
+      strAttractor +="Field[{0}] = Threshold;Field[{0}].IField = {1};Field[{0:n}].DistMax = {4:.1f};Field[{0:n}].DistMin = 0;Field[{0:n}].LcMax = {3:.1f};Field[{0}].LcMin = {2:.1f};\n".format(ATID,ATID-1,density,maxDensity,distance)
+      gATID.append(str(ATID))
+      
+    
+  return strAttractor,ATID,gATID

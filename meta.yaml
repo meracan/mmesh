@@ -1,0 +1,62 @@
+{% set name = "mshapely" %}
+{% set version = "0.0.1" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  # url: "https://github.com/meracan/mshapely/archive/{{version}}.tar.gz"
+  path: ./
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} setup.py install --single-version-externally-managed --record=record.txt"
+
+extra:
+  channels:
+    - meracan
+    - conda-forge
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python 
+    - numpy #1.18.1
+    - scipy #
+    - fiona 1.8.4
+    - shapely # 1.6.4
+    - pyproj # 1.9.6
+    - requests 
+    # - gdal # 2.3.3
+    - geojson
+    - tqdm 
+    - matplotlib 
+    # - libnetcdf 4.6.2
+    # - poppler 0.65
+
+test:
+  imports:
+    - mshapely
+  # source_files:
+  #   - tests/test_ludo.py
+  #   - tests/runTest.py
+  # requires:
+  #   - pytest
+  # commands:
+  #   - pytest tests/
+about:
+  home: "https://github.com/meracan/mshapely"
+  license: "MIT"
+  license_family: "MIT"
+  license_file: "LICENSE"
+  summary: "A shapely wrapper to manipulate spatial data for Marine Energy Resource Assessment Canada"
+  doc_url: "https://github.com/meracan/mshapely/README.md"
+  dev_url: "https://github.com/meracan/mshapely/doc/README.md"
+
+extra:
+  recipe-maintainers:
+    - julien.cousineau
